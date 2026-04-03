@@ -1,0 +1,35 @@
+{
+  "name": "90-Day Path — Bruce Lee Protocol",
+  "short_name": "90-Day Path",
+  "description": "Binary habit tracker for the 90-Day Bruce Lee Protocol",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f7f5f0",
+  "theme_color": "#1a1814",
+  "categories": ["health", "fitness", "productivity"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Today's Log",
+      "short_name": "Today",
+      "description": "Jump to today's row",
+      "url": "./?action=today"
+    }
+  ]
+}
