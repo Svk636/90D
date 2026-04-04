@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="90-Day Path — Bruce Lee Protocol Binary Tracker. Log your daily fitness, combat, performance, and mindset progress over 90 days.">
+<title>90-Day Path — Binary Tracker</title>
+
+<!-- Font preconnect (both origins required for cross-origin font fetch) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+
+<!-- html2pdf for PDF export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
+<style>
+  /* ── DESIGN TOKENS ────────────────────────────────── */
+  :root {
+    --black:    #000000;
+    --gray-900: #111111;
+    --gray-700: #333333;
+    --gray-600: #444444; /* FIX: was undefined, used in controls border */
+    --gray-500: #666666;
+    --gray-400: #888888; /* FIX: was undefined, used in 12 places */
+    --gray-300: #aaaaaa;
+    --gray-200: #cccccc;
+    --gray-100: #eeeeee;
+    --gray-50:  #f7f7f7;
+    --white:    #ffffff;
+    --f-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --f-mono: 'JetBrains Mono', 'Courier New', monospace;
+  }
+
+  /* ── RESET ────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--f-sans);
+    background: #e0e0e0;
+    color: var(--gray-900);
+    font-size: 9pt;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* ── TOPBAR CONTROLS ──────────────────────────────── */
+  .controls {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+    background: var(--black);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+  }
+  .controls-inner {
+    display: flex; align-items: center;
+    padding: 0 20px; height: 44px; gap: 0;
+  }
+  .controls-brand {
+    font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.18em;
+    color: var(--gray-400); text-transform: uppercase;
+    padding-right: 20px; border-right: 1px solid var(--gray-700);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .controls-buttons {
+    display: flex; gap: 8px; margin-left: 20px; flex-wrap: wrap;
+  }
+  .controls button {
+    font-family: var(--f-mono); font-size: 8.5px; letter-spacing: 0.10em;
+    padding: 6px 14px; border: 1px solid var(--gray-600);
+    background: transparent; color: var(--gray-300);
+    cursor: pointer; text-transform: uppercase;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    white-space: nowrap; line-height: 1;
+  }
+  .controls button:hover:not(:disabled) {
+    background: var(--gray-700); color: var(--white); border-color: var(--gray-500);
+  }
+  .controls button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .controls button.primary {
+    background: var(--white); color: var(--black);
+    border-color: var(--white); font-weight: 500;
+  }
+  .controls button.primary:hover:not(:disabled) { background: var(--gray-100); border-color: var(--gray-100); }
+  .controls button.danger { border-color: #555; color: var(--gray-400); }
+  .controls button.danger:hover:not(:disabled) { background: #2a2a2a; color: var(--gray-200); border-color: #666; }
+
+  /* ── PAGE (A4 sheet) ──────────────────────────────── */
+  .page {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 60px auto 28px;
+    padding: 12mm 14mm 22mm;
+    background: var(--white);
+    box-shadow: 0 4px 32px rgba(0,0,0,0.16);
+    position: relative;
+  }
+
+  /* ── PAGE HEADER ──────────────────────────────────── */
+  .page-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 2px solid var(--black);
+    padding-bottom: 4mm; margin-bottom: 5mm;
+  }
+  .header-left .title {
+    font-size: 24pt; font-weight: 300; letter-spacing: -0.03em; line-height: 1;
+    margin-bottom: 3px; color: var(--black);
+  }
+  .header-left .subtitle {
+    font-family: var(--f-mono); font-size: 6pt; letter-spacing: 0.16em;
+    color: var(--gray-500); text-transform: uppercase;
+  }
+  .header-right {
+    font-family: var(--f-mono); font-size: 6pt; color: var(--gray-500);
+    letter-spacing: 0.08em; text-align: right; line-height: 2.4;
+    flex-shrink: 0;
+  }
+  .date-field {
+    border: none; border-bottom: 1px solid var(--gray-300);
+    min-width: 24mm; margin-left: 4px;
+    background: transparent; font-family: var(--f-mono);
+    font-size: 6pt; color: var(--black); outline: none;
+    vertical-align: baseline; padding: 0 2px;
+  }
+  .date-field:focus { border-bottom-color: var(--black); }
+  /* Remove browser default input styling */
+  input.date-field { -webkit-appearance: none; appearance: none; border-radius: 0; }
+
+  /* ── LEGEND ───────────────────────────────────────── */
+  .legend {
+    display: flex; gap: 5mm; align-items: center; flex-wrap: wrap;
+    margin-bottom: 5mm; font-family: var(--f-mono);
+    font-size: 5.5pt; letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--gray-500);
+    padding: 2.5mm 4mm;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-100);
+  }
+  .legend-item { display: flex; align-items: center; gap: 2mm; }
+  .legend-box {
+    width: 5.5mm; height: 5.5mm; border: 1.5px solid var(--gray-300);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 7pt; font-weight: 600; font-family: var(--f-mono);
+    flex-shrink: 0; user-select: none;
+  }
+  .legend-box.done   { background: var(--black); color: var(--white); border-color: var(--black); }
+  .legend-box.missed { background: var(--gray-100); color: var(--gray-400); border-color: var(--gray-200); }
+  .legend-box.rest   { background: var(--gray-50); border: 1.5px dashed var(--gray-300); color: var(--gray-500); font-size: 5.5pt; }
+  .legend-sep  { width: 1px; height: 10px; background: var(--gray-200); flex-shrink: 0; }
+  .legend-note { color: var(--gray-400); font-size: 5pt; letter-spacing: 0.08em; }
+
+  /* ── COLUMN HEADERS ───────────────────────────────── */
+  .col-header {
+    display: grid;
+    grid-template-columns: 15mm 12mm 11mm 1fr 9.5mm 9.5mm 9.5mm 9.5mm 10mm;
+    background: var(--black); padding: 2.5mm 0; margin-bottom: 0;
+  }
+  .col-header span {
+    font-family: var(--f-mono); font-size: 5pt; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--gray-400); text-align: center;
+    padding: 0 1mm;
+  }
+  .col-header span:first-child  { text-align: left; padding-left: 2mm; }
+  .col-header span.notes-header { text-align: left; padding-left: 2mm; }
+  .col-header span.cat-header   { color: var(--white); font-weight: 500; }
+
+  /* ── LOG ROWS ─────────────────────────────────────── */
+  .log-row {
+    display: grid;
+    grid-template-columns: 15mm 12mm 11mm 1fr 9.5mm 9.5mm 9.5mm 9.5mm 10mm;
+    border-bottom: 1px solid var(--gray-100);
+    align-items: center; min-height: 7mm;
+  }
+  .log-row:hover          { background: var(--gray-50); }
+  .log-row.rest-row       { background: #fafafa; }
+  .log-row.week-start     { border-top: 1.5px solid var(--gray-200); }
+  .log-row.rest-row .row-day  { color: var(--gray-400); }
+  .log-row.rest-row .row-date { color: var(--gray-300); }
+  .log-row.rest-row .row-type { color: var(--gray-300); }
+
+  .row-day {
+    font-family: var(--f-mono); font-size: 6pt; letter-spacing: 0.04em;
+    color: var(--gray-700); padding: 0 0 0 2mm; font-weight: 500;
+  }
+  .row-date {
+    font-family: var(--f-mono); font-size: 5.5pt; color: var(--gray-500);
+    text-align: center; padding: 0 1mm;
+  }
+  .row-type {
+    font-family: var(--f-mono); font-size: 5pt; color: var(--gray-500);
+    text-align: center; letter-spacing: 0.06em; padding: 0 1mm;
+    text-transform: uppercase;
+  }
+  /* FIX: notes are contenteditable — must not use raw HTML from localStorage.
+     The cell uses textContent on restore, never innerHTML, preventing XSS. */
+  .row-note {
+    font-family: var(--f-sans); font-size: 6pt; color: var(--gray-400);
+    padding: 2px 2mm; white-space: nowrap; overflow: hidden;
+    outline: none; cursor: text; min-height: 7mm; display: flex; align-items: center;
+  }
+  .row-note:focus { color: var(--gray-900); background: #fffef5; outline: 1px solid var(--gray-200); outline-offset: -1px; }
+  .row-note.has-custom-note { color: var(--gray-700); }
+
+  .row-cell {
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* FIX: Added role="checkbox", tabindex, aria-label, keyboard handler for accessibility */
+  .check-box {
+    width: 6mm; height: 6mm; border: 1.5px solid var(--gray-200);
+    cursor: pointer; transition: border-color 0.08s, background 0.08s;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--f-mono); font-size: 7.5pt; font-weight: 600;
+    user-select: none; background: var(--white);
+    /* Keyboard focus ring */
+    outline: none;
+  }
+  .check-box:focus-visible { outline: 2px solid var(--black); outline-offset: 1px; }
+  .check-box:hover:not(.state-rest)    { border-color: var(--black); }
+  .check-box.state-1    { background: var(--black); color: var(--white); border-color: var(--black); }
+  .check-box.state-0    { background: var(--gray-100); color: var(--gray-400); border-color: var(--gray-200); }
+  .check-box.state-rest {
+    background: var(--gray-50); border: 1.5px dashed var(--gray-200);
+    color: var(--gray-300); font-size: 5.5pt; cursor: default;
+  }
+
+  .row-score {
+    font-family: var(--f-mono); font-size: 6.5pt; text-align: center;
+    color: var(--gray-700); font-weight: 600; padding: 0 1mm;
+  }
+  .row-score.score-perfect { color: var(--black); }
+  .row-score.score-zero    { color: var(--gray-300); }
+  .row-score.score-rest    { color: var(--gray-300); }
+
+  /* ── WEEK LABEL ───────────────────────────────────── */
+  .week-label-row {
+    display: flex; align-items: center; gap: 3mm;
+    padding: 1.5mm 0 1mm 2mm;
+    background: var(--white);
+  }
+  .week-label {
+    font-family: var(--f-mono); font-size: 5pt; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--gray-400); white-space: nowrap; flex-shrink: 0;
+  }
+  .week-rule { flex: 1; height: 1px; background: var(--gray-100); }
+
+  /* ── TOTALS / REFLECTION PAGE ─────────────────────── */
+  .totals-section { margin-top: 5mm; border-top: 2px solid var(--black); padding-top: 5mm; }
+
+  .section-label {
+    font-family: var(--f-mono); font-size: 6pt; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--gray-500);
+    margin-bottom: 3mm; display: flex; align-items: center; gap: 3mm;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--gray-200); }
+
+  .totals-grid {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 3mm; margin-bottom: 5mm;
+  }
+  .total-box { border: 1.5px solid var(--gray-200); padding: 3.5mm; text-align: center; }
+  .total-box.highlight { border-color: var(--black); background: var(--black); }
+  .total-box .t-label {
+    font-family: var(--f-mono); font-size: 5pt; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--gray-500); display: block; margin-bottom: 2mm;
+  }
+  .total-box.highlight .t-label { color: var(--gray-400); }
+  .total-box .t-field {
+    font-family: var(--f-mono); font-size: 18pt; font-weight: 300; color: var(--gray-900);
+    display: block; min-height: 10mm; line-height: 10mm;
+  }
+  .total-box.highlight .t-field { color: var(--white); }
+  .total-box .t-max {
+    font-family: var(--f-mono); font-size: 5pt; color: var(--gray-400); display: block; margin-top: 1mm;
+  }
+  .total-box.highlight .t-max { color: var(--gray-500); }
+
+  .strength-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; margin-bottom: 5mm;
+  }
+  .strength-box { border: 1.5px solid var(--gray-200); padding: 3.5mm; }
+  .strength-box .s-label {
+    font-family: var(--f-mono); font-size: 5pt; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--gray-500); display: block; margin-bottom: 3mm;
+  }
+  .s-row { display: flex; align-items: center; margin-bottom: 2.5mm; }
+  .s-row .s-day { font-family: var(--f-mono); font-size: 5.5pt; color: var(--gray-400); flex-shrink: 0; }
+  .s-row .s-val {
+    border: none; border-bottom: 1px solid var(--gray-200);
+    height: 5mm; background: transparent; border-radius: 0;
+    font-family: var(--f-mono); font-size: 7pt; color: var(--gray-900);
+    outline: none; padding: 0 2px; flex: 1; margin-left: 3mm;
+    -webkit-appearance: none; appearance: none;
+  }
+  .s-row .s-val:focus { border-bottom-color: var(--black); }
+
+  .reflection-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 3mm; margin-bottom: 4mm;
+  }
+  .reflection-box { border: 1.5px solid var(--gray-200); padding: 3.5mm; }
+  .reflection-box .r-label {
+    font-family: var(--f-mono); font-size: 5pt; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--gray-500); display: block; margin-bottom: 3mm;
+  }
+  .r-lines { display: flex; flex-direction: column; gap: 4mm; }
+  .r-line {
+    border-bottom: 1px solid var(--gray-100); min-height: 5mm; line-height: 5mm;
+    outline: none; font-size: 6.5pt; font-family: var(--f-sans);
+    color: var(--gray-900); padding: 0 2px;
+  }
+  .r-line:focus { border-bottom-color: var(--black); }
+
+  .one-word-box { border: 1.5px solid var(--black); padding: 4mm; text-align: center; }
+  .one-word-label {
+    font-family: var(--f-mono); font-size: 5pt; letter-spacing: 0.18em;
+    text-transform: uppercase; color: var(--gray-500); display: block; margin-bottom: 3mm;
+  }
+  .one-word-field {
+    font-family: var(--f-sans); font-size: 22pt; font-weight: 300; letter-spacing: -0.02em;
+    border-bottom: 1.5px solid var(--gray-200);
+    min-height: 14mm; display: flex; align-items: center; justify-content: center;
+    color: var(--gray-900); outline: none; cursor: text;
+  }
+  .one-word-field:focus { border-bottom-color: var(--black); }
+
+  /* ── QUOTE / FOOTER ───────────────────────────────── */
+  .bottom-quote {
+    font-style: italic; font-size: 7pt; color: var(--gray-400);
+    text-align: center; margin-top: 5mm; letter-spacing: 0.01em;
+    padding: 3mm 4mm; border-top: 1px solid var(--gray-100); line-height: 1.7;
+  }
+  .page-footer {
+    position: absolute; bottom: 7mm; left: 14mm; right: 14mm;
+    display: flex; justify-content: space-between;
+    font-family: var(--f-mono); font-size: 5pt; color: var(--gray-300);
+    letter-spacing: 0.10em; text-transform: uppercase;
+    border-top: 1px solid var(--gray-100); padding-top: 3mm;
+  }
+
+  /* ── PRINT / PDF ──────────────────────────────────── */
+  @media print {
+    body { background: white; }
+    .no-print { display: none !important; }
+    .page {
+      page-break-after: always; margin: 0;
+      padding: 12mm 14mm 22mm; box-shadow: none; background: white;
+    }
+    .page:last-child { page-break-after: avoid; }
+    @page { size: A4 portrait; margin: 0; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  }
+  @media print {
+    body.print-tracker-only #page3 { display: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ─────────────────────────────────────────────── -->
+<nav class="controls no-print" role="navigation" aria-label="Tracker controls">
+  <div class="controls-inner">
+    <span class="controls-brand">90-Day Path &middot; Bruce Lee Protocol</span>
+    <div class="controls-buttons">
+      <button class="primary" id="btnTracker" onclick="printTracker()">&#8595; Tracker PDF (2 pages)</button>
+      <button id="btnAll" onclick="printAll()">&#8595; Full PDF (+ Reflection)</button>
+      <button class="danger" onclick="resetAll()">&#8635; Reset All</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════
+     PAGE 1 — DAYS 1–45
+════════════════════════════════════ -->
+<div class="page" id="page1">
+  <div class="page-header">
+    <div class="header-left">
+      <div class="title">90-Day Path</div>
+      <div class="subtitle">Bruce Lee Protocol &nbsp;&middot;&nbsp; Binary Log &nbsp;&middot;&nbsp; Days 1&ndash;45</div>
+    </div>
+    <div class="header-right">
+      Name &nbsp;<input class="date-field" type="text" placeholder="____________________" id="f-name1" oninput="saveFields()" autocomplete="off"><br>
+      Start &nbsp;<input class="date-field" type="text" placeholder="____________" id="f-startdate" oninput="saveFields()" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="legend" role="note" aria-label="Legend">
+    <div class="legend-item"><div class="legend-box done" aria-hidden="true">1</div> Done</div>
+    <div class="legend-item"><div class="legend-box missed" aria-hidden="true">0</div> Missed</div>
+    <div class="legend-item"><div class="legend-box rest" aria-hidden="true">R</div> Rest day</div>
+    <div class="legend-sep"></div>
+    <span class="legend-note">Score = completed categories per day &nbsp;(max 4)</span>
+  </div>
+
+  <div class="col-header" role="row">
+    <span>Day</span>
+    <span>Date</span>
+    <span>Type</span>
+    <span class="notes-header">Notes</span>
+    <span class="cat-header">Fit</span>
+    <span class="cat-header">Combat</span>
+    <span class="cat-header">Perf</span>
+    <span class="cat-header">Mind</span>
+    <span>Score</span>
+  </div>
+
+  <div id="rows1-45"></div>
+
+  <div class="bottom-quote">
+    &ldquo;Under heaven nothing is more soft and yielding than water,<br>
+    yet for dissolving the hard and inflexible nothing can surpass it.&rdquo; &mdash; Lao Tzu
+  </div>
+  <div class="page-footer">
+    <span>90-Day Path &middot; Bruce Lee Protocol</span>
+    <span>Days 1&ndash;45</span>
+    <span>Page 1 of 3</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE 2 — DAYS 46–90
+════════════════════════════════════ -->
+<div class="page" id="page2">
+  <div class="page-header">
+    <div class="header-left">
+      <div class="title">90-Day Path</div>
+      <div class="subtitle">Bruce Lee Protocol &nbsp;&middot;&nbsp; Binary Log &nbsp;&middot;&nbsp; Days 46&ndash;90</div>
+    </div>
+    <div class="header-right">
+      Name &nbsp;<input class="date-field" type="text" placeholder="____________________" id="f-name2" oninput="saveFields()" autocomplete="off"><br>
+      <span style="color:var(--gray-400);">Continued from Day 45</span>
+    </div>
+  </div>
+
+  <div class="legend" role="note" aria-label="Legend">
+    <div class="legend-item"><div class="legend-box done" aria-hidden="true">1</div> Done</div>
+    <div class="legend-item"><div class="legend-box missed" aria-hidden="true">0</div> Missed</div>
+    <div class="legend-item"><div class="legend-box rest" aria-hidden="true">R</div> Rest day</div>
+    <div class="legend-sep"></div>
+    <span class="legend-note">Score = completed categories per day &nbsp;(max 4)</span>
+  </div>
+
+  <div class="col-header" role="row">
+    <span>Day</span>
+    <span>Date</span>
+    <span>Type</span>
+    <span class="notes-header">Notes</span>
+    <span class="cat-header">Fit</span>
+    <span class="cat-header">Combat</span>
+    <span class="cat-header">Perf</span>
+    <span class="cat-header">Mind</span>
+    <span>Score</span>
+  </div>
+
+  <div id="rows46-90"></div>
+
+  <div class="bottom-quote">
+    &ldquo;Be formless, shapeless &mdash; like water.&rdquo; &mdash; Bruce Lee
+  </div>
+  <div class="page-footer">
+    <span>90-Day Path &middot; Bruce Lee Protocol</span>
+    <span>Days 46&ndash;90</span>
+    <span>Page 2 of 3</span>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     PAGE 3 — REFLECTION
+════════════════════════════════════ -->
+<div class="page" id="page3">
+  <div class="page-header">
+    <div class="header-left">
+      <div class="title">Reflection</div>
+      <div class="subtitle">Bruce Lee Protocol &nbsp;&middot;&nbsp; 90-Day Final Tally</div>
+    </div>
+    <div class="header-right">
+      Name &nbsp;<input class="date-field" type="text" placeholder="____________________" id="f-name3" oninput="saveFields()" autocomplete="off"><br>
+      Day 90 &nbsp;<input class="date-field" type="text" placeholder="____________" id="f-enddate" oninput="saveFields()" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="totals-section">
+
+    <div class="section-label">Final Tally</div>
+    <div class="totals-grid">
+      <div class="total-box">
+        <span class="t-label">Fitness</span>
+        <span class="t-field" id="t-fit" aria-live="polite">&nbsp;</span>
+        <span class="t-max">/ 90 days</span>
+      </div>
+      <div class="total-box">
+        <span class="t-label">Combat</span>
+        <span class="t-field" id="t-combat" aria-live="polite">&nbsp;</span>
+        <span class="t-max">/ 90 days</span>
+      </div>
+      <div class="total-box">
+        <span class="t-label">Performance</span>
+        <span class="t-field" id="t-perf" aria-live="polite">&nbsp;</span>
+        <span class="t-max">/ 90 days</span>
+      </div>
+      <div class="total-box">
+        <span class="t-label">Attitude</span>
+        <span class="t-field" id="t-mind" aria-live="polite">&nbsp;</span>
+        <span class="t-max">/ 90 days</span>
+      </div>
+      <div class="total-box highlight">
+        <span class="t-label">Total</span>
+        <span class="t-field" id="t-total" aria-live="polite">&nbsp;</span>
+        <span class="t-max">/ 360 pts</span>
+      </div>
+    </div>
+
+    <div class="section-label">Strength Log &mdash; Start vs End</div>
+    <div class="strength-grid">
+      <div class="strength-box">
+        <span class="s-label">Push-ups (max reps)</span>
+        <div class="s-row"><span class="s-day">Day 1</span><input class="s-val" type="text" id="sv-pushup-1" oninput="saveFields()" autocomplete="off" aria-label="Push-ups Day 1"></div>
+        <div class="s-row"><span class="s-day">Day 90</span><input class="s-val" type="text" id="sv-pushup-90" oninput="saveFields()" autocomplete="off" aria-label="Push-ups Day 90"></div>
+      </div>
+      <div class="strength-box">
+        <span class="s-label">Pull-ups (max reps)</span>
+        <div class="s-row"><span class="s-day">Day 1</span><input class="s-val" type="text" id="sv-pullup-1" oninput="saveFields()" autocomplete="off" aria-label="Pull-ups Day 1"></div>
+        <div class="s-row"><span class="s-day">Day 90</span><input class="s-val" type="text" id="sv-pullup-90" oninput="saveFields()" autocomplete="off" aria-label="Pull-ups Day 90"></div>
+      </div>
+      <div class="strength-box">
+        <span class="s-label">Sprint 60m (sec)</span>
+        <div class="s-row"><span class="s-day">Day 1</span><input class="s-val" type="text" id="sv-sprint-1" oninput="saveFields()" autocomplete="off" aria-label="Sprint Day 1"></div>
+        <div class="s-row"><span class="s-day">Day 90</span><input class="s-val" type="text" id="sv-sprint-90" oninput="saveFields()" autocomplete="off" aria-label="Sprint Day 90"></div>
+      </div>
+      <div class="strength-box">
+        <span class="s-label">Sequence (min)</span>
+        <div class="s-row"><span class="s-day">Day 1</span><input class="s-val" type="text" id="sv-seq-1" oninput="saveFields()" autocomplete="off" aria-label="Sequence Day 1"></div>
+        <div class="s-row"><span class="s-day">Day 90</span><input class="s-val" type="text" id="sv-seq-90" oninput="saveFields()" autocomplete="off" aria-label="Sequence Day 90"></div>
+      </div>
+    </div>
+
+    <div class="section-label">Reflection</div>
+    <div class="reflection-grid">
+      <div class="reflection-box">
+        <span class="r-label">What changed in your body?</span>
+        <div class="r-lines">
+          <div class="r-line" contenteditable="true" id="rf-body-1" oninput="saveFields()"></div>
+          <div class="r-line" contenteditable="true" id="rf-body-2" oninput="saveFields()"></div>
+          <div class="r-line" contenteditable="true" id="rf-body-3" oninput="saveFields()"></div>
+          <div class="r-line" contenteditable="true" id="rf-body-4" oninput="saveFields()"></div>
+        </div>
+      </div>
+      <div class="reflection-box">
+        <span class="r-label">What changed in your mind?</span>
+        <div class="r-lines">
+          <div class="r-line" contenteditable="true" id="rf-mind-1" oninput="saveFields()"></div>
+          <div class="r-line" contenteditable="true" id="rf-mind-2" oninput="saveFields()"></div>
+          <div class="r-line" contenteditable="true" id="rf-mind-3" oninput="saveFields()"></div>
+          <div class="r-line" contenteditable="true" id="rf-mind-4" oninput="saveFields()"></div>
+        </div>
+      </div>
+      <div class="reflection-box">
+        <span class="r-label">The hardest day &mdash; and what you did</span>
+        <div class="r-lines">
+          <div class="r-line" contenteditable="true" id="rf-hard-1" oninput="saveFields()"></div>
+          <div class="r-line" contenteditable="true" id="rf-hard-2" oninput="saveFields()"></div>
+          <div class="r-line" contenteditable="true" id="rf-hard-3" oninput="saveFields()"></div>
+          <div class="r-line" contenteditable="true" id="rf-hard-4" oninput="saveFields()"></div>
+        </div>
+      </div>
+      <div class="reflection-box">
+        <span class="r-label">Next 90 days &mdash; one goal</span>
+        <div class="r-lines">
+          <div class="r-line" contenteditable="true" id="rf-next-1" oninput="saveFields()"></div>
+          <div class="r-line" contenteditable="true" id="rf-next-2" oninput="saveFields()"></div>
+          <div class="r-line" contenteditable="true" id="rf-next-3" oninput="saveFields()"></div>
+          <div class="r-line" contenteditable="true" id="rf-next-4" oninput="saveFields()"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="one-word-box">
+      <span class="one-word-label">Your one word for these 90 days</span>
+      <div class="one-word-field" contenteditable="true" id="rf-oneword" oninput="saveFields()"></div>
+    </div>
+
+  </div>
+
+  <div class="bottom-quote">
+    &ldquo;The successful warrior is the average man, with laser-like focus.&rdquo; &mdash; Bruce Lee
+  </div>
+  <div class="page-footer">
+    <span>90-Day Path &middot; Bruce Lee Protocol</span>
+    <span>Reflection &middot; Day 90</span>
+    <span>Page 3 of 3</span>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── CONSTANTS ─────────────────────────────────── */
+  var DAYS  = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  var TYPES = ['Power','Flow','Power','Flow','Power','Flow','Rest'];
+  var CATS  = ['fit','combat','perf','mind'];
+
+  var LS_STATE  = 'bl90_state';
+  var LS_NOTES  = 'bl90_notes';
+  var LS_FIELDS = 'bl90_fields';
+
+  var START_DATE = new Date(2025, 3, 6); // April 6 2025
+
+  /* ── HELPERS ──────────────────────────────────── */
+  function getWeek(d)      { return Math.ceil(d / 7); }
+  function getDayOfWeek(d) { return DAYS[(d - 1) % 7]; }
+  function getType(d)      { return TYPES[(d - 1) % 7]; }
+  function isRest(d)       { return (d - 1) % 7 === 6; }
+  function isWeekStart(d)  { return (d - 1) % 7 === 0; }
+
+  function getDayDate(d) {
+    var dt = new Date(START_DATE.getTime());
+    dt.setDate(dt.getDate() + d - 1);
+    return dt;
+  }
+
+  var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function formatDate(dt) {
+    return dt.getDate() + ' ' + MONTHS[dt.getMonth()];
+  }
+
+  /* FIX: Safe escape for text injected into HTML template strings */
+  function escapeHTML(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  /* ── LOCAL STORAGE (guarded) ──────────────────── */
+  /* FIX: Centralised lsGet/lsSet so every read/write is safe */
+  function lsGet(key) {
+    try { return localStorage.getItem(key); } catch(e) { return null; }
+  }
+  function lsSet(key, val) {
+    try { localStorage.setItem(key, val); } catch(e) {}
+  }
+  function lsRemove(key) {
+    try { localStorage.removeItem(key); } catch(e) {}
+  }
+  function lsParse(key, fallback) {
+    try { var v = lsGet(key); return v ? JSON.parse(v) : fallback; }
+    catch(e) { return fallback; }
+  }
+
+  /* ── STATE ────────────────────────────────────── */
+  /* FIX: state is loaded once at startup and re-loaded after resetAll */
+  var state = lsParse(LS_STATE, {});
+
+  function saveState() {
+    lsSet(LS_STATE, JSON.stringify(state));
+    updateTotals();
+  }
+
+  /* ── NOTES ────────────────────────────────────── */
+  function getNotes() { return lsParse(LS_NOTES, {}); }
+  function saveNote(d, val) {
+    var n = getNotes();
+    n[d] = val;
+    lsSet(LS_NOTES, JSON.stringify(n));
+  }
+
+  /* ── CELL LOGIC ───────────────────────────────── */
+  function cycleCell(d, cat) {
+    if (isRest(d)) return;
+    var key = d + '_' + cat;
+    var cur = state[key];
+    if (cur === undefined || cur === null) state[key] = 1;
+    else if (cur === 1)                   state[key] = 0;
+    else                                  state[key] = null;
+    saveState();
+    renderCell(d, cat);
+    renderScore(d);
+  }
+  /* Expose to inline onclick */
+  window.cycleCell = cycleCell;
+
+  function renderCell(d, cat) {
+    var el = document.getElementById('cell_' + d + '_' + cat);
+    if (!el) return;
+    if (isRest(d)) {
+      el.textContent = 'R';
+      el.className = 'check-box state-rest';
+      el.setAttribute('aria-checked', 'false');
+      el.setAttribute('aria-disabled', 'true');
+      return;
+    }
+    var v = state[d + '_' + cat];
+    if (v === 1) {
+      el.textContent = '1'; el.className = 'check-box state-1';
+      el.setAttribute('aria-checked', 'true');
+    } else if (v === 0) {
+      el.textContent = '0'; el.className = 'check-box state-0';
+      el.setAttribute('aria-checked', 'false');
+    } else {
+      el.textContent = ''; el.className = 'check-box';
+      el.setAttribute('aria-checked', 'mixed');
+    }
+  }
+
+  /* FIX: score logic — '—' is for rest, number 0 is valid "all missed" */
+  function getScore(d) {
+    if (isRest(d)) return null; // null = rest
+    var s = 0;
+    CATS.forEach(function(c) { if (state[d + '_' + c] === 1) s++; });
+    return s;
+  }
+
+  function renderScore(d) {
+    var el = document.getElementById('score_' + d);
+    if (!el) return;
+    var s = getScore(d);
+    if (s === null) {
+      el.textContent = '\u2014'; // em dash
+      el.className = 'row-score score-rest';
+    } else {
+      el.textContent = s;
+      el.className = 'row-score' +
+        (s === 4 ? ' score-perfect' : s === 0 ? ' score-zero' : '');
+    }
+  }
+
+  function updateTotals() {
+    var totals = {fit:0, combat:0, perf:0, mind:0};
+    for (var d = 1; d <= 90; d++) {
+      if (!isRest(d)) {
+        CATS.forEach(function(c) { if (state[d + '_' + c] === 1) totals[c]++; });
+      }
+    }
+    var t = totals.fit + totals.combat + totals.perf + totals.mind;
+    CATS.forEach(function(c) {
+      var el = document.getElementById('t-' + c);
+      if (el) el.textContent = totals[c] > 0 ? totals[c] : '\u00a0';
+    });
+    var tel = document.getElementById('t-total');
+    if (tel) tel.textContent = t > 0 ? t : '\u00a0';
+  }
+
+  /* ── BUILD ROWS ───────────────────────────────── */
+  function buildRows(containerId, from, to) {
+    var notes   = getNotes();
+    var html    = '';
+    var lastWeek = -1;
+
+    for (var d = from; d <= to; d++) {
+      var week = getWeek(d);
+
+      if (week !== lastWeek) {
+        html += '<div class="week-label-row">' +
+          '<span class="week-label">Week ' + week + '</span>' +
+          '<div class="week-rule"></div>' +
+          '</div>';
+        lastWeek = week;
+      }
+
+      var rest     = isRest(d);
+      var type     = getType(d);
+      var dayLabel = getDayOfWeek(d);
+      var dateStr  = formatDate(getDayDate(d));
+
+      var rowClass = 'log-row';
+      if (rest)         rowClass += ' rest-row';
+      if (isWeekStart(d)) rowClass += ' week-start';
+
+      /* FIX: savedNote is sanitised with escapeHTML before injection into innerHTML */
+      var defaultNote = rest
+        ? 'Yoga \u00b7 Journal \u00b7 Rest'
+        : (type === 'Power' ? 'Bag \u00b7 Lift \u00b7 Sequence' : 'Flow \u00b7 Core \u00b7 Stretch');
+      var savedNote = (notes[d] != null && notes[d] !== '') ? notes[d] : '';
+
+      var displayNote = escapeHTML(savedNote || defaultNote);
+      var noteClass   = 'row-note' + (savedNote ? ' has-custom-note' : '');
+
+      /* FIX: checkboxes have role, tabindex, aria-label, aria-checked for a11y */
+      var cells = CATS.map(function(c) {
+        var ariaLabel = 'Day ' + d + ' ' + c + (rest ? ' rest' : ' — click to toggle');
+        return '<div class="row-cell">' +
+          '<div class="check-box' + (rest ? ' state-rest' : '') + '"' +
+          ' id="cell_' + d + '_' + c + '"' +
+          ' role="checkbox"' +
+          ' tabindex="' + (rest ? '-1' : '0') + '"' +
+          ' aria-checked="' + (rest ? 'false' : 'mixed') + '"' +
+          ' aria-label="' + ariaLabel + '"' +
+          (rest ? ' aria-disabled="true"' : ' onclick="cycleCell(' + d + ',\'' + c + '\')"') +
+          ' onkeydown="handleCellKey(event,' + d + ',\'' + c + '\')"' +
+          ' title="' + ariaLabel + '"' +
+          '>' + (rest ? 'R' : '') + '</div>' +
+          '</div>';
+      }).join('');
+
+      var scoreInit = rest
+        ? '<div class="row-score score-rest">\u2014</div>'
+        : '<div class="row-score" id="score_' + d + '"></div>';
+
+      html +=
+        '<div class="' + rowClass + '" id="row_' + d + '">' +
+          '<div class="row-day">' + dayLabel + '&nbsp;' + String(d).padStart(2, '0') + '</div>' +
+          '<div class="row-date">' + dateStr + '</div>' +
+          '<div class="row-type">' + (rest ? 'Reset' : type) + '</div>' +
+          '<div class="' + noteClass + '" contenteditable="true" id="note_' + d + '"' +
+            ' oninput="handleNoteInput(' + d + ',this)"' +
+            ' title="Click to edit note"' +
+            ' aria-label="Day ' + d + ' note">' +
+            displayNote +
+          '</div>' +
+          cells +
+          (rest ? '<div class="row-score score-rest">\u2014</div>' :
+                  '<div class="row-score" id="score_' + d + '"></div>') +
+        '</div>';
+    }
+
+    document.getElementById(containerId).innerHTML = html;
+  }
+
+  /* FIX: note input handler — saves plain text, not innerHTML, preventing stored XSS */
+  function handleNoteInput(d, el) {
+    saveNote(d, el.innerText);
+  }
+  window.handleNoteInput = handleNoteInput;
+
+  /* FIX: keyboard handler for checkboxes — Space/Enter to toggle, arrow keys to navigate */
+  function handleCellKey(e, d, cat) {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      cycleCell(d, cat);
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      var idx = CATS.indexOf(cat);
+      var nextCat = CATS[idx + 1];
+      if (nextCat) {
+        var next = document.getElementById('cell_' + d + '_' + nextCat);
+        if (next) next.focus();
+      }
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      var idx2 = CATS.indexOf(cat);
+      var prevCat = CATS[idx2 - 1];
+      if (prevCat) {
+        var prev = document.getElementById('cell_' + d + '_' + prevCat);
+        if (prev) prev.focus();
+      }
+    }
+  }
+  window.handleCellKey = handleCellKey;
+
+  /* ── PDF EXPORT ───────────────────────────────── */
+  var PDF_OPT = {
+    margin: 0,
+    image:     { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true, letterRendering: true, logging: false },
+    jsPDF:     { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['css', 'avoid-all'] }
+  };
+
+  function clonePage(id) {
+    var el = document.getElementById(id);
+    if (!el) return null;
+    var c = el.cloneNode(true);
+    c.style.display   = 'block';
+    c.style.margin    = '0';
+    c.style.boxShadow = 'none';
+    c.style.pageBreakAfter = 'always';
+    return c;
+  }
+
+  function setBtn(id, label, disabled) {
+    var b = document.getElementById(id);
+    if (!b) return;
+    b.textContent = label;
+    b.disabled    = disabled;
+  }
+
+  /* FIX: PDF promise now has .catch() so buttons re-enable on failure */
+  function generatePDF(pageIds, filename, btnId, defaultLabel) {
+    setBtn(btnId, 'Generating\u2026', true);
+    var wrapper = document.createElement('div');
+    wrapper.style.background = 'white';
+    pageIds.forEach(function(id) {
+      var c = clonePage(id);
+      if (c) wrapper.appendChild(c);
+    });
+    document.body.appendChild(wrapper);
+
+    html2pdf()
+      .set(Object.assign({}, PDF_OPT, { filename: filename }))
+      .from(wrapper)
+      .save()
+      .then(function() {
+        document.body.removeChild(wrapper);
+        setBtn(btnId, defaultLabel, false);
+      })
+      .catch(function(err) {
+        console.error('PDF generation failed:', err);
+        if (document.body.contains(wrapper)) document.body.removeChild(wrapper);
+        setBtn(btnId, defaultLabel, false);
+        alert('PDF generation failed. Please try again.');
+      });
+  }
+
+  function printTracker() {
+    generatePDF(['page1','page2'], '90-Day-Path-Tracker.pdf', 'btnTracker', '\u2193 Tracker PDF (2 pages)');
+  }
+  function printAll() {
+    generatePDF(['page1','page2','page3'], '90-Day-Path-Complete.pdf', 'btnAll', '\u2193 Full PDF (+ Reflection)');
+  }
+  window.printTracker = printTracker;
+  window.printAll     = printAll;
+
+  /* ── TEXT FIELDS ──────────────────────────────── */
+  var TEXT_INPUT_IDS = [
+    'f-name1','f-name2','f-name3','f-startdate','f-enddate',
+    'sv-pushup-1','sv-pushup-90','sv-pullup-1','sv-pullup-90',
+    'sv-sprint-1','sv-sprint-90','sv-seq-1','sv-seq-90'
+  ];
+  var TEXT_CONTENT_IDS = [
+    'rf-body-1','rf-body-2','rf-body-3','rf-body-4',
+    'rf-mind-1','rf-mind-2','rf-mind-3','rf-mind-4',
+    'rf-hard-1','rf-hard-2','rf-hard-3','rf-hard-4',
+    'rf-next-1','rf-next-2','rf-next-3','rf-next-4',
+    'rf-oneword'
+  ];
+
+  function saveFields() {
+    var data = {};
+    TEXT_INPUT_IDS.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) data[id] = el.value;
+    });
+    TEXT_CONTENT_IDS.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) data[id] = el.innerText;
+    });
+    lsSet(LS_FIELDS, JSON.stringify(data));
+
+    /* Mirror name to all pages */
+    var n1 = document.getElementById('f-name1');
+    if (n1) {
+      ['f-name2','f-name3'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el && el !== document.activeElement) el.value = n1.value;
+      });
+    }
+  }
+  window.saveFields = saveFields;
+
+  function restoreFields() {
+    var data = lsParse(LS_FIELDS, {});
+    TEXT_INPUT_IDS.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && data[id] != null) el.value = data[id];
+    });
+    /* FIX: use textContent (not innerText/innerHTML) so stored content can't inject HTML */
+    TEXT_CONTENT_IDS.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && data[id] != null && data[id].trim()) el.textContent = data[id];
+    });
+  }
+
+  /* ── RESET ────────────────────────────────────── */
+  function resetAll() {
+    if (!confirm('Reset all entries? This cannot be undone.')) return;
+    /* FIX: clear and reload state from scratch */
+    lsRemove(LS_STATE);
+    lsRemove(LS_NOTES);
+    lsRemove(LS_FIELDS);
+    state = {};
+    init();
+  }
+  window.resetAll = resetAll;
+
+  /* ── INIT ─────────────────────────────────────── */
+  function init() {
+    /* Reload state from storage (needed after resetAll clears it) */
+    state = lsParse(LS_STATE, {});
+
+    buildRows('rows1-45',  1,  45);
+    buildRows('rows46-90', 46, 90);
+
+    /* Restore cell states and scores */
+    for (var d = 1; d <= 90; d++) {
+      CATS.forEach(function(c) { renderCell(d, c); });
+      renderScore(d);
+    }
+
+    updateTotals();
+    restoreFields();
+
+    /* Set default start/end dates if not saved */
+    var s = document.getElementById('f-startdate');
+    var e = document.getElementById('f-enddate');
+    if (s && !s.value) s.value = formatDate(getDayDate(1))  + ' 2025';
+    if (e && !e.value) e.value = formatDate(getDayDate(90)) + ' 2025';
+  }
+
+  /* Start */
+  init();
+
+})(); // end IIFE — no globals leaked
+</script>
+</body>
+</html>
